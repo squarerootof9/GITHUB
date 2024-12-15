@@ -2,6 +2,9 @@
 *
 
 # Allow specific files
+!.gitignore
+!LICENSE
+!README.md
 !git_command.sh
 !repo_list.txt
 
