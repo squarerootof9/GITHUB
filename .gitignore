@@ -1,7 +1,9 @@
 # Ignore everything
+
 *
 
 # Allow specific files
+
 !.gitignore
 !LICENSE
 !README.md
@@ -10,7 +12,9 @@
 
 
 # Allow specific files in subdirectories
+
 # !subdir/important_file.txt
 
 # Exclude directories (prevent subdirectories from being included unless explicitly allowed)
+
 */
