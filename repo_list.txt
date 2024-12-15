@@ -1,0 +1,6 @@
+https://github.com/squarerootof9/ADB-Commander
+https://github.com/squarerootof9/SimpleWget
+https://github.com/squarerootof9/WinHosts
+https://github.com/squarerootof9/MacSetup
+https://github.com/squarerootof9/UbuntuSetup
+https://github.com/squarerootof9/WindowsSetup

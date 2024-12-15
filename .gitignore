@@ -1,0 +1,13 @@
+# Ignore everything
+*
+
+# Allow specific files
+!git_command.sh
+!repo_list.txt
+
+
+# Allow specific files in subdirectories
+# !subdir/important_file.txt
+
+# Exclude directories (prevent subdirectories from being included unless explicitly allowed)
+*/
