@@ -9,25 +9,193 @@ main_menu() {
         echo "======================"
         echo "1) Clone Repositories"
         echo "2) Mark Repositories Safe"
-        echo "3) Create Keys"
-        echo "4) Make Authentication Key"
-        echo "5) Setup Git"
-        echo "6) Exit"
+        echo "3) Manage Repositories"
+        echo "4) Create New Repository"
+        echo "5) Create Keys"
+        echo "6) Make Authentication Key"
+        echo "7) Setup Git"
+        echo "8) Exit"
         echo
         read -p "Choose an option: " choice
         case $choice in
             1) clone_repositories ;;
             2) mark_repos_safe ;;
-            3) create_keys ;;
-            4) make_authentication_key ;;
-            5) setup_git ;;
-            6) echo "Goodbye!"; exit 0 ;;
-            *) echo "Invalid option. Please choose 1, 2, 3, 4, 5, or 6." ;;
+            3) manage_repositories ;;
+            4) create_new_repository ;;
+            5) create_keys ;;
+            6) make_authentication_key ;;
+            7) setup_git ;;
+            8) echo "Goodbye!"; exit 0 ;;
+            *) echo "Invalid option. Please choose a valid option." ;;
         esac
     done
 }
 
-# Function to clone repositories from repo_list.txt
+# Function to manage repositories
+manage_repositories() {
+    echo
+    echo "Searching for cloned repositories in repo_list.txt..."
+
+    if [ ! -f repo_list.txt ]; then
+        echo "Error: repo_list.txt not found. Please create this file with one repository URL per line."
+        return
+    fi
+
+    # Collect list of repositories from repo_list.txt
+    local repos=()
+    while IFS= read -r repo_url || [ -n "$repo_url" ]; do
+        repo_name=$(basename "$repo_url" .git)
+        repo_path="$PWD/$repo_name"
+        if [ -d "$repo_path/.git" ]; then
+            repos+=("$repo_name:$repo_path")
+        fi
+    done < repo_list.txt
+
+    if [ ${#repos[@]} -eq 0 ]; then
+        echo "No cloned repositories found in repo_list.txt."
+        return
+    fi
+
+    echo "Available Repositories:"
+    for i in "${!repos[@]}"; do
+        echo "$((i + 1))) ${repos[i]%%:*}"
+    done
+    echo "$(( ${#repos[@]} + 1 ))) Return to Main Menu"
+
+    read -p "Select a repository: " repo_choice
+    if [ "$repo_choice" -gt 0 ] && [ "$repo_choice" -le "${#repos[@]}" ]; then
+        selected_repo_name="${repos[$((repo_choice - 1))]%%:*}"
+        selected_repo_path="${repos[$((repo_choice - 1))]##*:}"
+        echo "Selected Repository: $selected_repo_name at $selected_repo_path"
+        repository_menu "$selected_repo_name" "$selected_repo_path"
+    else
+        echo "Returning to Main Menu."
+    fi
+}
+
+# Function to create a new repository
+create_new_repository() {
+    echo
+    echo "Create New Repository"
+    read -p "Enter the name of the repository directory: " repo_dir
+    read -p "Enter the initial commit message: " input_message
+    read -p "Enter the path to the remote repository (e.g., git@github.com:username/repo.git): " repo_uri
+
+    if [ ! -d "$repo_dir" ]; then
+        echo "Directory does not exist. Creating $repo_dir..."
+        mkdir -p "$repo_dir"
+    fi
+
+    # Mark the directory as safe for Git operations
+    git config --global --add safe.directory "$repo_dir"
+    echo "Marked $repo_dir as safe."
+
+    # Initialize the repository and push to remote
+    pushd "$repo_dir" > /dev/null || { echo "Failed to access directory $repo_dir"; return; }
+    echo "# $repo_dir" >> README.md
+    git init
+    git add README.md
+    git add .
+    git commit -m "$input_message"
+    git branch -M main
+    git remote add origin "$repo_uri"
+    git push -u origin main
+    popd > /dev/null
+
+    # Add the repo URI to repo_list.txt
+    echo "$repo_uri" >> repo_list.txt
+    echo "Repository created, pushed to remote, and added to repo_list.txt: $repo_uri"
+}
+
+# Submenu for repository operations
+repository_menu() {
+    local repo_name="$1"
+    local repo_path="$2"
+
+    while true; do
+        echo
+        echo "Repository Menu: $repo_name"
+        echo "1) Status"
+        echo "2) Add All"
+        echo "3) Commit"
+        echo "4) Push"
+        echo "5) Pull"
+        echo "6) Fetch"
+        echo "7) Other"
+        echo "8) Switch Repository"
+        echo "9) Main Menu"
+        echo
+        read -p "Choose an option: " choice
+        case $choice in
+            1) git -C "$repo_path" status ;;
+            2) git -C "$repo_path" add . ;;
+            3)
+                read -p "Enter commit message: " commit_message
+                git -C "$repo_path" commit -m "$commit_message" -S
+                ;;
+            4) git -C "$repo_path" push ;;
+            5) git -C "$repo_path" pull ;;
+            6) git -C "$repo_path" fetch ;;
+            7) other_menu "$repo_name" "$repo_path" ;;
+            8) manage_repositories; return ;;
+            9) return ;;
+            *) echo "Invalid option. Please choose a valid option." ;;
+        esac
+    done
+}
+
+# Function for the "Other" menu
+other_menu() {
+    local repo_name="$1"
+    local repo_path="$2"
+
+    while true; do
+        echo
+        echo "Other Menu: $repo_name"
+        echo "1) Resign All and Push"
+        echo "2) View Commit History"
+        echo "3) New History Starting Point"
+        echo "4) Push To New Repository"
+        echo "5) Previous Menu"
+        echo
+        read -p "Choose an option: " choice
+        case $choice in
+            1)
+                git -C "$repo_path" commit --amend --no-edit -S
+                git -C "$repo_path" push --force
+                ;;
+            2)
+                echo "Commit History:"
+                git -C "$repo_path" log
+                ;;
+            3)
+                echo "WARNING: This will reset the repository history. This action is NOT reversible."
+                read -p "Would you like to continue? (y/N): " confirm
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    read -p "Enter the new starting point commit message: " input_message
+                    git -C "$repo_path" checkout main
+                    git -C "$repo_path" reset --soft "$(git -C "$repo_path" rev-list --max-parents=0 HEAD)"
+                    git -C "$repo_path" commit -S -m "$input_message"
+                    git -C "$repo_path" push --force
+                    echo "Repository history reset and pushed."
+                else
+                    echo "Operation canceled."
+                fi
+                ;;
+            4)
+                read -p "Enter the path to the remote repository (e.g., git@github.com:username/repo.git): " repo_uri
+                git -C "$repo_path" branch -M main
+                git -C "$repo_path" remote add origin "$repo_uri"
+                git -C "$repo_path" push -u origin main
+                echo "Repository pushed to new remote: $repo_uri"
+                ;;
+            5) return ;;
+            *) echo "Invalid option. Please choose a valid option." ;;
+        esac
+    done
+}
+
+# Function to clone repositories
 clone_repositories() {
     echo
     echo "Cloning repositories from repo_list.txt..."
@@ -37,16 +205,12 @@ clone_repositories() {
     fi
 
     while IFS= read -r repo_url || [ -n "$repo_url" ]; do
-        if [[ "$repo_url" =~ ^https?:// || "$repo_url" =~ ^git@ ]]; then
-            repo_name=$(basename "$repo_url" .git)
-            if [ ! -d "$repo_name" ]; then
-                echo "Cloning $repo_url into $repo_name..."
-                git clone "$repo_url" "$repo_name"
-            else
-                echo "Skipping $repo_name: Repository already exists."
-            fi
+        repo_name=$(basename "$repo_url" .git)
+        if [ ! -d "$repo_name/.git" ]; then
+            echo "Cloning $repo_url into $repo_name..."
+            git clone "$repo_url" "$repo_name"
         else
-            echo "Skipping $repo_url: Not a valid Git URL."
+            echo "Skipping $repo_name: Repository already exists."
         fi
     done < repo_list.txt
     echo "All repositories processed."
@@ -59,7 +223,6 @@ mark_repos_safe() {
     read -p "Enter the parent directory containing your repositories (default: current directory): " parent_dir
     parent_dir="${parent_dir:-$(pwd)}"
 
-    # Find and add all .git directories as safe
     find "$parent_dir" -name ".git" -type d | while read -r repo; do
         repo_dir=$(dirname "$repo")
         git config --global --add safe.directory "$repo_dir"
@@ -68,6 +231,8 @@ mark_repos_safe() {
 
     echo "All repositories under $parent_dir have been marked as safe."
 }
+
+# Other existing functions (create_keys, make_authentication_key, setup_git) remain unchanged.
 
 # Function to create signing keys
 create_keys() {
