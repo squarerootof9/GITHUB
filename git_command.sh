@@ -134,7 +134,7 @@ repository_menu() {
             2) git -C "$repo_path" add . ;;
             3)
                 read -p "Enter commit message: " commit_message
-                git -C "$repo_path" commit -m "$commit_message" -S
+                git -C "$repo_path" commit -m "$commit_message"
                 ;;
             4) git -C "$repo_path" push ;;
             5) git -C "$repo_path" pull ;;
@@ -164,7 +164,7 @@ other_menu() {
         read -p "Choose an option: " choice
         case $choice in
             1)
-                git -C "$repo_path" commit --amend --no-edit -S
+                git -C "$repo_path" commit --amend --no-edit
                 git -C "$repo_path" push --force
                 ;;
             2)
@@ -178,7 +178,7 @@ other_menu() {
                     read -p "Enter the new starting point commit message: " input_message
                     git -C "$repo_path" checkout main
                     git -C "$repo_path" reset --soft "$(git -C "$repo_path" rev-list --max-parents=0 HEAD)"
-                    git -C "$repo_path" commit -S -m "$input_message"
+                    git -C "$repo_path" commit -m "$input_message"
                     git -C "$repo_path" push --force
                     echo "Repository history reset and pushed."
                 else
