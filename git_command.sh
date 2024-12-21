@@ -87,7 +87,10 @@ create_new_repository() {
     fi
 
     # Mark the directory as safe for Git operations
-    git config --global --add safe.directory "$repo_dir"
+
+
+    git config --global --add safe.directory "$(cd "$repo_dir" && pwd)"
+
     echo "Marked $repo_dir as safe."
 
     # Initialize the repository and push to remote
