@@ -11,7 +11,7 @@ main_menu() {
         echo "2) Mark Repositories Safe"
         echo "3) Manage Repositories"
         echo "4) Create New Repository"
-        echo "5) Create Keys"
+        echo "5) Make Signing Key"
         echo "6) Make Authentication Key"
         echo "7) Setup Git"
         echo "8) Exit"
@@ -22,7 +22,7 @@ main_menu() {
             2) mark_repos_safe ;;
             3) manage_repositories ;;
             4) create_new_repository ;;
-            5) create_keys ;;
+            5) make_signing_key ;;
             6) make_authentication_key ;;
             7) setup_git ;;
             8) echo "Goodbye!"; exit 0 ;;
@@ -235,10 +235,8 @@ mark_repos_safe() {
     echo "All repositories under $parent_dir have been marked as safe."
 }
 
-# Other existing functions (create_keys, make_authentication_key, setup_git) remain unchanged.
-
 # Function to create signing keys
-create_keys() {
+make_signing_key() {
     echo
     echo "Creating SSH keys for signing..."
 
